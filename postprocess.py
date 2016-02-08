@@ -22,16 +22,25 @@ parser.add_argument('dataset', help="Data set",
 args = parser.parse_args(arguments)
 dataset = args.dataset
 
-print(dataset)
-
 # get the files
 with h5py.File("output."+dataset+".hdf5", "r") as f:
-    alpha = np.array(f["alpha"])
-    accuracy = np.array(f["accuracy"])
+    if "alpha" in f.keys():
+        alpha = np.array(f["alpha"])
+    if "accuracy" in f.keys():
+        accuracy = np.array(f["accuracy"])
+
     y_hat = np.array(f["output"],dtype = np.int32)
 
-plt.plot(alpha,accuracy)
-plt.show()
+if "alpha" in locals() and "accuracy" in locals():
+    plt.plot(alpha,accuracy)
+    plt.xlabel("alpha")
+    plt.ylabel("Pct Correct")
+    plt.show()
+
+# make IDs
+ids = np.arange(len(y_hat)) + 1
+output = np.vstack((ids,y_hat)).transpose()
 
 # save the output
-np.savetxt("results."+dataset+".csv",y_hat,"%d")
+np.savetxt("results."+dataset+".csv",output,"%d"
+            ,header="ID,Category",delimiter=",",comments="")
