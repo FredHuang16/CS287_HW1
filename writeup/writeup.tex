@@ -2,66 +2,52 @@
 \documentclass[11pt]{article}
 
 \usepackage{common}
-\title{HW0: Sample Assignment}
-\author{Alexander Rush \\ srush@seas.harvard.edu \and Sam Wiseman \\ swiseman@seas.harvard.edu }
+\title{HW1: Text Classification}
+\author{Akhil Ketkar \\ akhilketkar@g.harvard.edu}
 \begin{document}
 
 \maketitle{}
 \section{Introduction}
 
-This note lays out our expectation for a homework submission in
-\textit{CS287: Statistical Natural Language Processing}. While you do
-not have to follow this template to the letter, we do expect that
-write-ups have a very clear structure and cover all the elements
-described in this note. With this in mind, the burden is on the
-presenter to demonstrate why deviations from the standard are
-necessary.
+The objective of this assignment is to classify text into categories. For
+instance we might be given a movie review and asked to predict the rating
+that the movie was given by the reviewer. But there are other examples such
+as classfiying an email as spam or not spam. Alternatively classifying it as
+important or not important as GMail now does.
 
-All write-ups should include a short introduction. In this section you
-should summarize the underlying problem in high-level language and
-describe the extensions that you have decided to propose in your
-implementation. When you describe these extensions you should
-carefully cite the papers of interest. For instance, it will often be
-useful to cite the work seen in class
-\citep{murphy2012machine}. Alternatively, you can also cite papers
-inline, for instance the work of \citet{berger1996maximum}.
-
+We use 3 linear models from \citep{murphy2012machine} for this assignment.
 
 \section{Problem Description}
 
-In general, homeworks will be specified using informal
-language. As part of the assignment, we expect you to write-out a
-definition of the problem and your model in formal language. For this
-class, we will use the following notation:
+More formally we want to learn a fucntion that maps text to a category. We
+represent the text using some set of features $\mcF$. Each data point is
+represented by a vector $\boldx$ of size $|\mcF|$ where $x_{f_i} = 1$ if
+that feature is "on" and 0 otherwise.
 
-\begin{itemize}
-\item $\boldb, \boldm$;  bold letters for vectors.
-\item $\boldB, \boldM$;  bold capital letters for matrices.
-\item $\mcB, \mcM$;  script-case for sets.
-\item $b_i, x_i$; lower case for scalars or indexing into vectors.
-\end{itemize}
+The categories are elements of a set $\mcC$ and are represented by one-hot
+vectors $\boldy \in \{0,1\}^{|\mcC|}$ where $y_i = 1$ if the piece of text is
+in category $i$.
 
+So the goal is to learn a function $\boldy = f(\boldx)$ that maps the feature
+based representation of the text to the appropriate category.
 
-For instance in natural language processing, it is common to use
-discrete sets like $\mcV$ for the vocabulary of the language, or $\mcT$ for a
-tag set of the language.  We might also want one-hot vectors
-representing words. These will be of the type
-$\boldv \in \{0,1\}^{|\mcV|}$. In a note, it is crucial to define the
-types of all variables that are introduced. The problem description is the
-right place to do this.
-
-% NLP is also
-% full of sequences. For instance sentences, $w_1, \ldots, w_N$, where
-% here $N$ is a constant length and $w_i \in \mcV$ for all
-% $i \in \{1, \ldots N\}$. If we pretend sentences are all the same
-% length, we can have scoring function over sentences,
-% $s : \mcV^N \mapsto \reals$.  One might be defined as:
-
-% \[ s(w_1, \ldots, w_N) = \sum_{i = 1}^N p(w_i | w_{i-2}, w_{i-1}), \]
-
-% \noindent where $p$ is the bigram probability, which we will cover later in the class.
 
 \section{Model and Algorithms}
+
+For all the models below (unless mentioned otherwise) we use bag of words
+features. i.e The cardinality of $\mcF$ is the length of the vocabulary and
+each piece of text is represented simply by turning "on" the feature
+corresponding to each unique word in the text.
+
+The models we use are also all linear. i.e The functions we will try to learn
+will be of the form $\boldy = f(\boldx \boldW + \boldb)$ where $\boldW,\boldb$
+are the parameters.
+
+\begin{itemize}
+  \item Naive Bayes
+  \item Multinomial Logistic Regression
+  \item Linear SVM
+\end{itemize}
 
 Here you specify the model itself. This section should formally
 describe the model used to solve the task proposed in the previous
