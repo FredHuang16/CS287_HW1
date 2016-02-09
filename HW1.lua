@@ -9,13 +9,10 @@ cmd:option('-classifier', 'nb', 'classifier to use')
 
 -- Hyperparameters
 cmd:option('-alpha',1,'alpha hyperparameter for nb')
-cmd:option('-lambda',0.5,'lambda hyperparameter for lg')
-cmd:option('-M',100,'mini-batch size hyperparameter for lg')
-cmd:option('-eta',0.5,'learning rate hyperparameter for lg')
-cmd:option('-N',100,'num epochs hyperparameter for lg')
-
--- ...
-
+cmd:option('-lambda',0.5,'lambda hyperparameter for lr')
+cmd:option('-M',100,'mini-batch size hyperparameter for lr')
+cmd:option('-eta',0.5,'learning rate hyperparameter for lr')
+cmd:option('-N',100,'num epochs hyperparameter for lr')
 
 function main()
    -- Parse input params
@@ -36,30 +33,41 @@ function main()
 
    test_input = f:read('test_input'):all()
 
+   -- set up empty containers for W & b that we will use throughout
    W = torch.DoubleTensor(nclasses,nfeatures)
    b = torch.DoubleTensor(nclasses)
 
+   -- pick which model we want to run
    if opt.classifier == "nb" then nbRun()
-   elseif opt.classifier == "lg" then lgRun()
+   elseif opt.classifier == "lr" then lrRun()
    elseif opt.classifier == "svm" then svmRun()
-   else print("Classifier should be (nb,lg,svm)")
+   else print("Classifier should be (nb,lr,svm)")
    end
 end
 
 -- Logistic Regression Fucntions
-function lgRun()
+function lrRun()
   print("Running Multiclass Logistic Regression on ",opt.datafile)
+
+  -- start the timer to measure how long it takes to train the model
   local timer = torch.Timer()
-  local loss = lgTrain()
+
+  -- train the model
+  local loss = lrTrain()
   print("Total time taken",timer:time().real)
 
+  -- run the model on the validation data to see how well it does
   test("valid")
+
+  -- run the model on the test data
   y_hat, _ = test("test")
+
+  -- write the outputs to file
   writeToFile({["output"] = y_hat,["trainLoss"] = loss}
     ,"output."..opt.datafile)
 end
 
-function lgTrain()
+function lrTrain()
   return sgd(crLoss,dLcrdW,dLcrdb)
 end
 
@@ -110,11 +118,20 @@ end
 -- SVM functions
 function svmRun()
   print("Running SVM on ",opt.datafile)
+
+  -- start the timer to measure how long it takes to train the model
   local timer = torch.Timer()
+
+  -- train the model
   local loss = svmTrain()
   print("Total time taken",timer:time().real)
+
+  -- run the model on the validation data to see how well it does
   test("valid")
+
+  -- run the model on the test data
   y_hat, _ = test("test")
+
   -- local model = {["type"] = "SVM",["lambda"] = opt.lambda,["eta"] = opt.eta}
   writeToFile({["output"] = y_hat,["trainLoss"] = loss}
     ,"output."..opt.datafile)
@@ -183,13 +200,22 @@ end
 -- Naive Bayes functions
 function nbRun()
   print("Running Naive Bayes on ",opt.datafile)
-  -- check if alpha was specified if so use it
 
+  -- check if alpha was specified if so use it
   if(opt.alpha ~= -1) then
+    -- start the timer to measure training time
     local timer = torch.Timer()
+
+    -- train the model
     nbTrain(opt.alpha)
     print("Total time taken",timer:time().real)
+
+    -- run the model on the validation data
+    test("valid")
+
+    -- run the model on the test data
     y_hat, _ = test("test")
+
     writeToFile({["output"] = y_hat}
       ,"output."..opt.datafile)
 
@@ -337,7 +363,8 @@ function test(type)
   return y_hat , correct / num_samples_test
 end
 
--- utilities
+-- UTILITIES
+-- stochastic gradient decent algorithm
 function sgd(loss,grad_W,grad_b)
   local num_samples = train_input:size(1)
   local max_sent_len = train_input:size(2)

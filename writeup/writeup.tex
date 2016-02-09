@@ -111,17 +111,72 @@ function. The "learning" will be the set of parameters that produce the minima.
   we assigned the highest score that was not the true class i.e
   $c' = argmax_{d \in \mcC \setminus \{c\}} \hat{y}_d$
 
+  We add a regularization term similar to the one in logistic regression to this
+  loss function as well so that we penalize large weights.
+
 \end{itemize}
-
-
 
 \section{Experiments}
 
+\begin{itemize}
+    \item \textbf{Naive Bayes}
+
+    Since the optimization for this model has a closed form result and there's
+    only one hyperparameter to tune, we can afford to a grid search over $\alpha$
+    using the validation set. That results in the figure shown below in
+    Figure~\ref{fig:nbA}.
+
+    The accuracy achieved using this model is in the low to mid 30s.
+
+    \item \textbf{Logistic Regression}
+
+    This is a relatively expensive model to train. With a batch size of 100 and
+    number of epochs set to 1000, the model takes ~120 seconds to train. It is not
+    feasible in moderate The loss function from a sample run is shown below in
+    Figure~\ref{fig:lLR}. This model however tuned properly seems to give the best
+    performance.
+
+    In terms of selecting hyperparameters (weight decay $\lambda$, learning rate
+    $\eta$ and size of mini-batch $M$) I experimented with a few values and
+    selected what seemed to work best on the validation set. The value of the loss
+    seems to oscillate quite a bit as can be seen from the previous figure. Given
+    this behavior, we can infer that the model is being pushed too far in each step
+    so a smaller learning rate should be used. It probably also calls for a larger
+    weight decay rate.
+
+    \item \textbf{Linear SVM}
+
+    This model is less expensive to train but performs worse than Logistic
+    Regression. With a batch size of 100 and number of epochs set to 1000, the
+    model takes ~90 seconds to train.The loss function from a sample run is shown
+    below in Figure~\ref{fig:lSVM}.
+
+    The graph of the training loss for this model looks similar to the training
+    loss for Logistic Regression. I chose hyperparameters in a similar fashion
+    to that model (by trial and error).
+\end{itemize}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.5\textwidth]{nbAlphaGS}
+  \caption{\label{fig:nbA} Grid Search over $\alpha$}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.5\textwidth]{lossLR}
+  \caption{\label{fig:lLR} Training Loss for LR}
+\end{figure}
+
+\begin{figure}
+  \centering
+  \includegraphics[width=0.5\textwidth]{lossSVM}
+  \caption{\label{fig:lSVM} Training Loss for SVM}
+\end{figure}
+
+
 The baseline for all these models should be 0.2 since thats the score we would
 get if we assigned labels at random.
-
-Settings used for LR: th HW1.lua -datafile SST1.hdf5 -classifier lg -M 100
--N 10000 -eta 0.05 -lambda 0.8
 
 \begin{table}[h]
 \centering
@@ -130,9 +185,9 @@ Settings used for LR: th HW1.lua -datafile SST1.hdf5 -classifier lg -M 100
  Model &  & Acc. \\
  \midrule
  \textsc{Baseline 1} & & 0.20\\
- \textsc{Model 1: NB} & &  \\
+ \textsc{Model 1: NB} & & 0.36 \\
  \textsc{Model 2: LG} & & 0.41719 \\
- \textsc{Model 3: SVM} & & 7.49\\
+ \textsc{Model 3: SVM} & & 0.37\\
  \bottomrule
 \end{tabular}
 \caption{\label{tab:results} Table with the main results.}
@@ -140,20 +195,26 @@ Settings used for LR: th HW1.lua -datafile SST1.hdf5 -classifier lg -M 100
 
 \section{Conclusion}
 
-Some progress has been made over random assignment, but accuracy is still quite
-low.
+Some progress has been made over random assignment, but accuracy of high 30s to
+low 40s is still quite poor. A lot of progress can be made on this models.
 
 Potential improvements:
 
 \begin{itemize}
-  \item Better Features
+  \item Better Features:
   We're ignoring the structure inherent in the data. Not taking into account
   qualifying terms like "but", "not" etc.
 
-  \item Better Model
+  \item Faster Processors:
+  This will allow faster training and experimentation with hyperparameters.
+
+  \item Better Model:
+  All these models are linear in the features which can certainly be improved
 \end{itemize}
 
 \bibliographystyle{apalike}
 \bibliography{writeup}
 
 \end{document}
+
+%Settings used for LR: th HW1.lua -datafile SST1.hdf5 -classifier lr -M 100 -N 10000 -eta 0.05 -lambda 0.8
