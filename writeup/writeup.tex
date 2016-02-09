@@ -2,129 +2,126 @@
 \documentclass[11pt]{article}
 
 \usepackage{common}
+\usepackage{hyperref}
 \title{HW1: Text Classification}
-\author{Akhil Ketkar \\ akhilketkar@g.harvard.edu}
-\begin{document}
+\author{Akhil Ketkar \\ akhilketkar@g.harvard.edu \\ \url{https://github.com/akhilketkar/CS287_HW1}}
 
+\begin{document}
 \maketitle{}
+
 \section{Introduction}
 
 The objective of this assignment is to classify text into categories. For
-instance we might be given a movie review and asked to predict the rating
-that the movie was given by the reviewer. But there are other examples such
-as classfiying an email as spam or not spam. Alternatively classifying it as
-important or not important as GMail now does.
-
-We use 3 linear models from \citep{murphy2012machine} for this assignment.
+instance, we might be given a movie review and asked to predict the rating
+that the movie was given by the reviewer. Other examples might be classifying
+an email as spam or not spam. Alternatively classifying it as
+important or not important as GMail now does. We use 3 linear models from
+\citep{murphy2012machine} for this assignment.
 
 \section{Problem Description}
 
-More formally we want to learn a fucntion that maps text to a category. We
-represent the text using some set of features $\mcF$. Each data point is
-represented by a vector $\boldx$ of size $|\mcF|$ where $x_{f_i} = 1$ if
-that feature is "on" and 0 otherwise.
+\begin{itemize}
+  \item \textbf{Input Representation}: We represent the input text using some set of features
+  $\mcF$. Each data point is represented by a vector $\boldx$ of size
+  $d_{in} = |\mcF|$ where $x_{f_i} = 1$ if that feature is "on" and 0 otherwise.
+  In practice we use a sparse representation to store $\boldx$ since most of
+  it's entries are 0.
 
-The categories are elements of a set $\mcC$ and are represented by one-hot
-vectors $\boldy \in \{0,1\}^{|\mcC|}$ where $y_i = 1$ if the piece of text is
-in category $i$.
+  \item \textbf{Output Representation}: The output categories are elements of a set
+  $\mcC$ where $d_{out} = |\mcC|$
+  and are represented by one-hot vectors $\boldy \in \{0,1\}^{d_{out}}$ where
+  $y_i = 1$ if the piece of text is in category $i \in \mcC$.
 
-So the goal is to learn a function $\boldy = f(\boldx)$ that maps the feature
-based representation of the text to the appropriate category.
+  \item \textbf{Learning Representation}:  So the goal is to learn a function
+  $\bold{\hat{y}} = f(\boldx)$ that maps the
+  feature based representation of the text to a score vector $\bold{\hat{y}}$. The
+  highest scoring class is our prediction of the output.
+  $\hat{c} = \argmax_{i \in \mcC} \hat{y}_i$
 
+  \item \textbf{Evaluation}: We measure how well the algorithm performs by simply
+  counting the percentage
+  of time we get the right answer. $\sum_{i=1}^N \frac{\bold1(y_i = \hat{c})}{N}$
+
+\end{itemize}
 
 \section{Model and Algorithms}
 
 For all the models below (unless mentioned otherwise) we use bag of words
-features. i.e The cardinality of $\mcF$ is the length of the vocabulary and
-each piece of text is represented simply by turning "on" the feature
+features. i.e $d_{in}$ is the number of unique words in all the text samples.
+Thus each piece of text is represented simply by turning "on" the feature
 corresponding to each unique word in the text.
 
 The models we use are also all linear. i.e The functions we will try to learn
-will be of the form $\boldy = f(\boldx \boldW + \boldb)$ where $\boldW,\boldb$
-are the parameters.
+will be of the form $\bold{\hat{y}} = f(\boldx \boldW + \boldb)$ where $\boldW,\boldb$
+are the parameters. In each model we will define a loss function that will
+capture some notion of doing badly at the given task (text classification in
+this case). We will then perform a straightforward minimization of the loss
+function. The "learning" will be the set of parameters that produce the minima.
 
 \begin{itemize}
-  \item Naive Bayes
-  \item Multinomial Logistic Regression
-  \item Linear SVM
-\end{itemize}
+  \item \textbf{Multinomial Naive Bayes}
+  In this model we assume that the features are conditionally independent of each
+  other given $\boldy_i$ and the parameters. We also assume that the features are
+  generated from a multinomial distribution. The loss function $L$ we use here is the
+  negative joint log-likelihood.
 
-Here you specify the model itself. This section should formally
-describe the model used to solve the task proposed in the previous
-section. This section should try to avoid introducing new vocabulary
-or notation, when possible use the notation from the previous section.
-Feel free to use the notation from class, but try to make the note
-understandable as a standalone piece of text.
+  $$L(\boldW,\boldb) = - \sum_{i=1}^N \log p(\boldx_i,\boldy_i | \boldW,\boldb)$$
 
-This section is also a great place to include other material that
-describes the underlying structure and choices of your model, for
-instance here are some example tables and algorithms from full
-research papers:
+  Using the chain rule we can simplify the RHS into a marginal and a conditional.
+  Independence further simplifies the expression giving
 
+  $$L(\boldW,\boldb) = - \sum_{i=1}^N \log \prod_{j=1}^{d_{in}}
+    p(x_{f_i} = 1| \boldy_i, \boldW, \boldb) p(\boldy)$$
 
+  We can find best estimates for both the terms in the above expression in closed
+  form by simply counting how often a feature appears in a particular category
+  and by counting the number of times a category is seen in the dataset.
 
-\begin{itemize}
-\item diagrams of your model,
+  \item \textbf{Multinomial Logistic Regression}
 
-  \begin{center}
-    \includegraphics[width=0.4\textwidth]{network}
-  \end{center}
-\item feature tables,
+  In this model we take a discriminative approach and estimate $p(\boldy|\boldx)$
+  directly by using the softmax function which takes in any real vector and turns
+  it into probabilities (each value in (0,1) and the sum = 1).
+  $$ p(\bold{\hat{y}}|\boldx) = softmax(\boldx \boldW + \boldb) $$
 
-  \begin{center}
-    \begin{tabular}{@{}lll@{}}
-      \toprule
-      &\multicolumn{2}{c}{Mention Features  } \\
-      & Feature & Value Set\\
-      \midrule
-      & Mention Head & $\mcV$ \\
-      & Mention First Word & $\mcV$ \\
-      & Mention Last Word & $\mcV$ \\
-      & Word Preceding Mention & $\mcV$ \\
-      & Word Following Mention & $\mcV$\\
-      & \# Words in Mention & $\{1, 2, \ldots \}$ \\
-      & Mention Type & $\mathcal{T}$ \\
-      \bottomrule
-    \end{tabular}
-  \end{center}
+  Then we use a cross-entropy loss function to compute how badly our probabilities
+  differed from the actual.
+  $$ L(\boldW, \boldb) = \sum_{i=1}^{N} L_{cr}(\bold{\hat{y}_i},\boldy_i) $$
+  where
+  $$ L_{cr}(\bold{\hat{y}},\boldy) = - \sum_{j=1}^{d_{out}} y_j \log \hat{y}_j $$
 
-\item pseudo-code,
+  Given that $\boldy$ is a one-hot vector this simplifies to a single term. If
+  we try to optimize this loss, the weights will blow up to infinity so we add a
+  $l_2$ regularization term. There is no closed form solution to this optimization
+  so we have to use some form of gradient decent. Here we've used mini-batch
+  stochastic gradient decent.
 
-  \begin{algorithmic}[1]
-    \Procedure{Linearize}{$x_1\ldots x_N$, $K$, $g$}
-    \State{$B_0 \gets \langle (\langle \rangle, \{1, \ldots, N\}, 0, \boldh_0, \mathbf{0})  \rangle$}
-    \For{$m = 0, \ldots, M-1$ }
-    \For{$k = 1, \ldots, |B_m|$}
-    \For{$i \in \mcR$}
-    \State{$(y, \mcR, s, \boldh) \gets \mathrm{copy}(B_m^{(k)})$}
-    \For{word $w$ in phrase $x_i$}
-    \State{$y \gets y $ append $w$ }
-    \State{$s \gets s + \log q(w, \boldh) $ }
-    \State{$\boldh \gets \delta(w, \boldh)$}
-    \EndFor{}
-    \State{$B_{m+|w_i|} \gets B_{m+|w_i|} + (y, \mcR - i, s,   \boldh)$}
-    \State{keep top-$K$ of $B_{m+|w_i|}$ by $f(x, y) + g(\mcR)$}
-    \EndFor{}
-    \EndFor{}
-    \EndFor{}
-    \State{\Return{$B_{M}^{(k)}$}}
-    \EndProcedure{}
-  \end{algorithmic}
+  \item \textbf{Linear SVM}
+
+  In this model we remove the probabalistic interpretation of
+  $\bold{\hat{y}} = \boldx \boldW + \boldb$ and simply treat it as a score.
+
+  We then use the hinge loss function to compute the loss of our score.
+  $$ L(\boldW, \boldb) = \sum_{i=1}^{N} L_{h}(\bold{\hat{y}_i},\boldy_i) $$
+  and
+
+  $$ L_h(\bold{\hat{y}},\boldy) = \max \{0,1 - (\hat{y}_c - \hat{y}_{c'}) \}$$
+
+  where $c$ is the true class i.e $y_c = 1$ and $c'$ is the class to which
+  we assigned the highest score that was not the true class i.e
+  $c' = argmax_{d \in \mcC \setminus \{c\}} \hat{y}_d$
 
 \end{itemize}
+
 
 
 \section{Experiments}
 
-Finally we end with the experimental section. Each assignment will make clear the main experiments and baselines that you should run. For these experiments you should present a main results table. Here we give a sample Table~\ref{tab:results}. In addition to these results you should describe in words what the table shows and the relative performance of the models.
+The baseline for all these models should be 0.2 since thats the score we would
+get if we assigned labels at random.
 
-Besides the main results we will also ask you to present other results
-comparing particular aspects of the models. For instance, for word
-embedding experiments, we may ask you to show a chart of the projected
-word vectors. This experiment will lead to something like
-Figure~\ref{fig:clusters}. This should also be described within the
-body of the text itself.
-
+Settings used for LR: th HW1.lua -datafile SST1.hdf5 -classifier lg -M 100
+-N 10000 -eta 0.05 -lambda 0.8
 
 \begin{table}[h]
 \centering
@@ -132,27 +129,29 @@ body of the text itself.
  \toprule
  Model &  & Acc. \\
  \midrule
- \textsc{Baseline 1} & & 0.45\\
- \textsc{Baseline 2} & & 2.59 \\
- \textsc{Model 1} & & 10.59  \\
- \textsc{Model 2} & &13.42 \\
- \textsc{Model 3} & & 7.49\\
+ \textsc{Baseline 1} & & 0.20\\
+ \textsc{Model 1: NB} & &  \\
+ \textsc{Model 2: LG} & & 0.41719 \\
+ \textsc{Model 3: SVM} & & 7.49\\
  \bottomrule
 \end{tabular}
 \caption{\label{tab:results} Table with the main results.}
 \end{table}
 
-
-\begin{figure}
-  \centering
-  \includegraphics[width=6cm]{cluster_viz}
-  \caption{\label{fig:clusters} Sample qualitative chart.}
-\end{figure}
-
-
 \section{Conclusion}
 
-End the write-up with a very short recap of the main experiments and the main results. Describe any challenges you may have faced, and what could have been improved in the model.
+Some progress has been made over random assignment, but accuracy is still quite
+low.
+
+Potential improvements:
+
+\begin{itemize}
+  \item Better Features
+  We're ignoring the structure inherent in the data. Not taking into account
+  qualifying terms like "but", "not" etc.
+
+  \item Better Model
+\end{itemize}
 
 \bibliographystyle{apalike}
 \bibliography{writeup}

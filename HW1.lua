@@ -49,14 +49,18 @@ end
 -- Logistic Regression Fucntions
 function lgRun()
   print("Running Multiclass Logistic Regression on ",opt.datafile)
-  lgTrain()
+  local timer = torch.Timer()
+  local loss = lgTrain()
+  print("Total time taken",timer:time().real)
+
   test("valid")
   y_hat, _ = test("test")
-  writeToFile({["output"] = y_hat},"output."..opt.datafile)
+  writeToFile({["output"] = y_hat,["trainLoss"] = loss}
+    ,"output."..opt.datafile)
 end
 
 function lgTrain()
-  sgd(crLoss,dLcrdW,dLcrdb)
+  return sgd(crLoss,dLcrdW,dLcrdb)
 end
 
 function l_softmax(vec)
@@ -104,18 +108,20 @@ function dLcrdW(x,y)
 end
 
 -- SVM functions
-
 function svmRun()
-  print("Running Linear SVM on ",opt.datafile)
   print("Running SVM on ",opt.datafile)
-  svmTrain()
+  local timer = torch.Timer()
+  local loss = svmTrain()
+  print("Total time taken",timer:time().real)
   test("valid")
-  -- y_hat, _ = test("test")
-  -- writeToFile({["output"] = y_hat},"output."..opt.datafile)
+  y_hat, _ = test("test")
+  -- local model = {["type"] = "SVM",["lambda"] = opt.lambda,["eta"] = opt.eta}
+  writeToFile({["output"] = y_hat,["trainLoss"] = loss}
+    ,"output."..opt.datafile)
 end
 
 function svmTrain()
-  sgd(hingeLoss,dLhdW,dLhdb)
+  return sgd(hingeLoss,dLhdW,dLhdb)
 end
 
 function dLhdz(x,y)
@@ -180,9 +186,12 @@ function nbRun()
   -- check if alpha was specified if so use it
 
   if(opt.alpha ~= -1) then
+    local timer = torch.Timer()
     nbTrain(opt.alpha)
+    print("Total time taken",timer:time().real)
     y_hat, _ = test("test")
-    writeToFile({["output"] = y_hat},"output."..opt.datafile)
+    writeToFile({["output"] = y_hat}
+      ,"output."..opt.datafile)
 
   -- if not then loop over some reasonable range of alphas
   else
@@ -345,8 +354,8 @@ function sgd(loss,grad_W,grad_b)
   local L = torch.zeros(opt.N)
   local idx = 0
 
-  local adjFactorW = 1 - (opt.eta * opt.lambda)/(nclasses * nfeatures)
-  local adjFactorb = 1 - (opt.eta * opt.lambda)/nclasses
+  local adjFactorW = 1 - (opt.eta * opt.lambda)/(nclasses * (nfeatures+1))
+  local adjFactorb = 1 - (opt.eta * opt.lambda)/(nclasses * (nfeatures+1))
   print("adjFactorW",adjFactorW,"adjFactorb",adjFactorb)
 
   for i=1,opt.N do -- number of epochs
@@ -439,7 +448,7 @@ function writeToFile(obj,f)
   myFile:close()
 end
 
--- testing beer
+-- testing random stuff
 function testCode()
   -- let's define some global memory we'll update, and some fixed, global parameters
   buf = nil
@@ -456,4 +465,5 @@ function testCode()
   print(A,x,dfdA(A,x,b))
   print(checkgrad(f,dfdA,A,x,b))
 end
+
 main()
